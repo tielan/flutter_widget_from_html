@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'ops/tag_a.dart';
 import 'ops/tag_iframe.dart';
+import 'ops/tag_video.dart';
 import 'ops/tag_li.dart';
 import 'config.dart';
 
@@ -41,9 +42,7 @@ Widget wrapPadding(Widget widget, EdgeInsets padding) => (widget != null &&
 
 class WidgetFactory extends core.WidgetFactory {
   final Config config;
-
   WidgetFactory(BuildContext context, this.config) : super(context);
-
   @override
   Widget buildImageWidget(String src, {int height, int width}) => wrapPadding(
         super.buildImageWidget(src, height: height, width: width),
@@ -54,7 +53,6 @@ class WidgetFactory extends core.WidgetFactory {
   Widget buildImageWidgetFromUrl(String url) {
     final imageUrl = buildFullUrl(url, config.baseUrl);
     if (imageUrl?.isEmpty != false) return null;
-
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.cover,
@@ -86,7 +84,25 @@ class WidgetFactory extends core.WidgetFactory {
         ),
         config.webViewPadding,
       );
-
+  Widget buildWebViewContent(
+    String content, {
+    double height,
+    double width,
+  }) =>
+      wrapPadding(
+        AspectRatio(
+          aspectRatio:
+              (height != null && height > 0 && width != null && width > 0)
+                  ? (width / height)
+                  : (16 / 9),
+          child: WebView(
+              content: content,
+              javascriptMode: config.webViewJs
+                  ? JavascriptMode.unrestricted
+                  : JavascriptMode.disabled),
+        ),
+        config.webViewPadding,
+      );
   Widget buildWebViewLinkOnly(String url) => TagA(url, this, icon: false)
       .onPieces(<core.BuiltPiece>[
         core.BuiltPieceSimple(widgets: <Widget>[buildTextWidget(url)]),
@@ -98,11 +114,9 @@ class WidgetFactory extends core.WidgetFactory {
   @override
   core.NodeMetadata parseElement(dom.Element e) {
     var meta = super.parseElement(e);
-
     switch (e.localName) {
       case 'a':
         meta = core.lazySet(meta, color: Theme.of(context).accentColor);
-
         if (e.attributes.containsKey('href')) {
           final href = e.attributes['href'];
           final fullUrl = buildFullUrl(href, config.baseUrl);
@@ -111,7 +125,6 @@ class WidgetFactory extends core.WidgetFactory {
           }
         }
         break;
-
       case 'iframe':
         meta = core.lazySet(
           meta,
@@ -119,24 +132,29 @@ class WidgetFactory extends core.WidgetFactory {
           isNotRenderable: false,
         );
         break;
-
+      case 'video':
+        meta = core.lazySet(
+          meta,
+          buildOp: tagVideo(e),
+          isNotRenderable: false,
+        );
+        break;
       case 'li':
       case 'ol':
       case 'ul':
         meta = core.lazySet(null, buildOp: tagLi(e.localName));
         break;
     }
-
     return meta;
   }
 
   core.BuildOp tagA(String fullUrl) => core.BuildOp(
         onPieces: TagA(fullUrl, this).onPieces,
       );
-
   core.BuildOp tagIframe(dom.Element e) =>
       core.BuildOp(onWidgets: (_) => <Widget>[TagIframe(this).build(e)]);
-
+  core.BuildOp tagVideo(dom.Element e) =>
+      core.BuildOp(onWidgets: (_) => <Widget>[TagVideo(this).build(e)]);
   core.BuildOp tagLi(String tag) => core.BuildOp(
         onWidgets: (widgets) => <Widget>[TagLi(this).build(widgets, tag)],
       );
