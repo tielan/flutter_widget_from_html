@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart'
+import '../core/flutter_widget_from_html_core.dart'
     show BuiltPiece, BuiltPieceSimple;
 import 'package:url_launcher/url_launcher.dart';
 
